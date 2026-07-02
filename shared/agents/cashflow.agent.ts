@@ -1,0 +1,130 @@
+import type { Agent } from './base';
+import type { FinancialState, ProjectedOutcome, ProposalDraft, ReasoningStep } from '../types';
+import { forecastCashflow } from '../tools';
+import { fmtDate, money } from '../util';
+
+/**
+ * Cashflow Agent — looks ahead so the customer never gets caught short, and
+ * auto-allocates each paycheck within guardrails. Both behaviours adapt to the
+ * same forward-looking forecast.
+ */
+export const cashflowAgent: Agent = {
+  meta: { id: 'cashflow', name: 'Cashflow Agent', blurb: 'Looks ahead so you never get caught short', emoji: '🌊', accent: '#2F6BFF' },
+  defaultConfig: { id: 'cashflow', mode: 'auto', limits: { maxAutoAllocateSGD: 3000 } },
+
+  evaluate(event, { state }) {
+    if (event.type === 'bill-forecast') return shortfall(state);
+    if (event.type === 'salary') return allocate(state, event.payload.amount);
+    return null;
+  },
+};
+
+function shortfall(state: FinancialState): ProposalDraft | null {
+  // Forecast the customer's *spending float*, not whatever surplus is parked in
+  // the account right now. Cash above the comfort buffer is savings the Yield
+  // Agent sweeps into a Fixed Deposit — so the pinch a customer actually feels is
+  // bills vs. buffer. Anchoring here keeps the shortfall stable whether or not the
+  // overnight sweep is currently in place (e.g. after the customer taps Undo).
+  const current = state.accounts.find((a) => a.id === 'acc_current');
+  const spendingFloat = Math.min(current?.balance ?? 0, state.comfortBuffer);
+  const forecast = forecastCashflow(state, 'acc_current', 30, spendingFloat);
+  if (!forecast.belowBuffer) return null;
+
+  const gap = Math.round(state.comfortBuffer - forecast.projectedLow);
+  const a360 = state.accounts.find((a) => a.id === 'acc_360');
+  // Cover the gap (rounded up to a clean S$1k), but never propose moving more than
+  // the 360 Account actually holds — else the top-up overpromises or fails.
+  const topUp = Math.min(a360?.balance ?? 0, Math.ceil(gap / 1000) * 1000);
+  const bills = forecast.upcoming
+    .filter((u) => u.amount < 0)
+    .sort((a, b) => a.amount - b.amount)
+    .slice(0, 2);
+  const billText = bills.map((b) => `${money(-b.amount)} ${b.label.toLowerCase()} (${fmtDate(b.date)})`).join(' and ');
+
+  const reasoning: ReasoningStep[] = [
+    { label: 'Forecast 30 days ahead', detail: 'Walked every scheduled bill and GIRO against your expected salary.' },
+    { label: 'Found the pinch', detail: `${billText} land before your buffer recovers. Low point: ${money(forecast.projectedLow)} on ${fmtDate(forecast.lowDate)}.` },
+    { label: 'Checked your pots', detail: `Your 360 Account holds ${money(a360?.balance ?? 0)} — enough to bridge without breaking your Fixed Deposit.` },
+  ];
+  const projectedOutcome: ProjectedOutcome[] = [
+    { label: 'Projected low', value: `${money(forecast.projectedLow)} · ${fmtDate(forecast.lowDate)}`, tone: 'warn' },
+    { label: 'Below buffer by', value: `-${money(gap)}`, tone: 'warn' },
+    { label: 'If you top up', value: 'stays above buffer', tone: 'good' },
+  ];
+
+  return {
+    agentId: 'cashflow',
+    scenario: 'cashflow-shortfall',
+    kind: 'needs-approval', // a multi-option decision — deliberately handed to the customer
+    title: 'A tight stretch is coming — here are your options',
+    summary: `After ${billText}, your Everyday Account is projected to dip to ${money(forecast.projectedLow)} on ${fmtDate(forecast.lowDate)} — ${money(gap)} below your ${money(state.comfortBuffer)} comfort buffer. Nothing's wrong yet; I caught it early.`,
+    reasoning,
+    confidence: 0.86,
+    dataUsed: ['Scheduled bills & GIRO', 'Salary date & amount', 'All account balances', 'Your comfort buffer'],
+    projectedOutcome,
+    action: { type: 'moveFunds', label: `Top up ${money(topUp)} from 360`, params: { fromId: 'acc_360', toId: 'acc_current', amount: topUp }, reversible: true },
+    choices: [
+      { id: 'topup', label: `Top up ${money(topUp)} from 360`, kind: 'primary', resolvesTo: 'approved' },
+      { id: 'instalment', label: 'Split IRAS into GIRO instalments', kind: 'secondary', resolvesTo: 'approved' },
+      { id: 'dismiss', label: "Dismiss — I'll handle it", kind: 'secondary', resolvesTo: 'rejected' },
+    ],
+    priority: 3,
+  };
+}
+
+function allocate(state: FinancialState, salary: number): ProposalDraft | null {
+  const bto = state.goals.find((g) => g.id === 'goal_bto');
+  if (!bto) return null;
+
+  const baseBto = Math.round(salary * 0.15);
+  const baseJapan = Math.round(salary * 0.1);
+  const baseEmergency = Math.round(salary * 0.1);
+  const baseTotal = baseBto + baseJapan + baseEmergency;
+
+  // Adapt the allocation to the near-term forecast: if a shortfall looms, only
+  // move the priority slice now and auto-move the rest once the pinch clears.
+  const tight = forecastCashflow(state, 'acc_current', 21).belowBuffer;
+  const splits = tight
+    ? [{ goalId: 'goal_bto', amount: baseBto }]
+    : [
+        { goalId: 'goal_bto', amount: baseBto },
+        { goalId: 'goal_japan', amount: baseJapan },
+        { goalId: 'goal_emergency', amount: baseEmergency },
+      ];
+  const movedNow = splits.reduce((t, x) => t + x.amount, 0);
+  const deferred = baseTotal - movedNow;
+  const btoPctBefore = Math.round((bto.saved / bto.target) * 100);
+  const btoPctAfter = Math.round(((bto.saved + baseBto) / bto.target) * 100);
+
+  const reasoning: ReasoningStep[] = [
+    { label: 'Payday detected', detail: `${money(salary)} salary credited to your Everyday Account.` },
+    { label: 'Applied your rule', detail: `15% BTO · 10% Japan · 10% emergency = ${money(baseTotal)}.` },
+    tight
+      ? { label: 'Protected your buffer', detail: `IRAS is due within the week, so I deferred ${money(deferred)} (Japan + emergency) and moved only the BTO ${money(baseBto)} now.` }
+      : { label: 'Within guardrails', detail: `${money(movedNow)} is within your ${money(3000)} auto-allocate limit.` },
+  ];
+
+  const projectedOutcome: ProjectedOutcome[] = [{ label: 'Moved to goals now', value: money(movedNow), tone: 'good' }];
+  if (deferred > 0) projectedOutcome.push({ label: 'Deferred (auto, after IRAS)', value: money(deferred), tone: 'neutral' });
+  projectedOutcome.push({ label: 'BTO reno goal', value: `${btoPctBefore}% → ${btoPctAfter}%`, tone: 'good' });
+
+  return {
+    agentId: 'cashflow',
+    scenario: 'salary-allocation',
+    kind: 'action-taken',
+    title: tight ? 'Payday — split adjusted around your tax bill' : 'Payday — I split it the way you set',
+    summary: tight
+      ? `${money(salary)} landed. Your rule is ${money(baseTotal)} to goals, but IRAS is due in days — so I moved the priority ${money(movedNow)} to your BTO goal now and will auto-move the remaining ${money(deferred)} once tax clears.`
+      : `${money(salary)} landed. I split ${money(movedNow)} across your goals exactly as you set and left the rest for spending.`,
+    reasoning,
+    confidence: 0.9,
+    dataUsed: ['Salary credit', 'Your allocation rule', '30-day forecast', 'Goal balances'],
+    projectedOutcome,
+    action: { type: 'allocateSalary', label: `Allocate ${money(movedNow)} to goals`, params: { fromId: 'acc_current', splits }, reversible: true },
+    choices: [
+      { id: 'keep', label: 'Looks good', kind: 'primary', resolvesTo: 'approved' },
+      { id: 'undo', label: 'Undo', kind: 'secondary', resolvesTo: 'reverted' },
+    ],
+    priority: 2,
+  };
+}

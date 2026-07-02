@@ -1,0 +1,43 @@
+{
+  "name": "ocbc-ahead",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "OCBC Ahead — an agentic banking layer. A team of specialist AI agents that anticipate needs and act proactively, always explainable and under the customer's control.",
+  "scripts": {
+    "dev": "vite --host",
+    "server": "tsx watch server/index.ts",
+    "dev:full": "concurrently -k -n web,api -c magenta,cyan \"vite --host\" \"tsx watch server/index.ts\"",
+    "build": "vite build",
+    "preview": "vite preview",
+    "smoke": "tsx scripts/smoke.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.105.0",
+    "@google/genai": "^2.9.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "firebase": "^12.15.0",
+    "framer-motion": "^11.15.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "zustand": "^5.0.2"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.10.2",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
+    "concurrently": "^9.1.0",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.17",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vite": "^5.4.11"
+  }
+}

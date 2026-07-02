@@ -1,0 +1,22 @@
+{
+  "name": "ocbc-ahead-functions",
+  "private": true,
+  "main": "lib/index.js",
+  "engines": {
+    "node": "22"
+  },
+  "scripts": {
+    "build": "esbuild src/index.ts --bundle --platform=node --target=node22 --format=cjs --outfile=lib/index.js --external:firebase-functions --external:firebase-admin --external:express --external:cors"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "firebase-admin": "^13.0.1",
+    "firebase-functions": "^7.2.5"
+  },
+  "devDependencies": {
+    "@anthropic-ai/sdk": "^0.105.0",
+    "@google/genai": "^2.9.0",
+    "esbuild": "^0.24.0"
+  }
+}
