@@ -50,7 +50,28 @@ export const GUIDE_STEPS: GuideStep[] = [
     target: 'control-hub',
     title: 'You set the autonomy',
     body:
-      'For each agent choose Observe (just watches), Suggest (asks first) or Auto (acts within a dollar limit you set). Protection never drops below Suggest — safety can’t be switched off.',
+      'Every agent runs at the level of independence you choose here. Protection never drops below Suggest — safety can’t be switched off. Let’s look at the three levels.',
+  },
+  {
+    tab: 'control',
+    target: 'mode-observe',
+    title: 'Observe — it just watches',
+    body:
+      'The agent flags and logs whatever it spots, with no threshold to clear. It never acts and never asks.',
+  },
+  {
+    tab: 'control',
+    target: 'mode-suggest',
+    title: 'Suggest — it asks first',
+    body:
+      'Within the limit you set, a proposal is a one-tap yes. Anything bigger always comes to you before a cent moves.',
+  },
+  {
+    tab: 'control',
+    target: 'mode-auto',
+    title: 'Auto — it acts within limits',
+    body:
+      'The agent moves on its own up to your dollar limit, then tells you afterwards. Every autonomous move is logged and reversible.',
   },
   {
     tab: 'activity',

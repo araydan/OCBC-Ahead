@@ -60,7 +60,7 @@ export function ControlCenter() {
         </p>
       </div>
 
-      {AGENT_ORDER.map((id) => {
+      {AGENT_ORDER.map((id, agentIdx) => {
         const meta = AGENT_META[id];
         const cfg = configs[id];
         const limit = LIMITS[id];
@@ -94,6 +94,7 @@ export function ControlCenter() {
                 return (
                   <button
                     key={m.id}
+                    data-guide={agentIdx === 0 ? `mode-${m.id}` : undefined}
                     disabled={disabled}
                     onClick={() => setMode(id, m.id)}
                     aria-pressed={active}
