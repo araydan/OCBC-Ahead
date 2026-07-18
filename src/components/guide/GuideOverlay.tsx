@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { useSimulation } from '@/store/useSimulation';
 import { useUI } from '@/store/useUI';
@@ -7,6 +7,9 @@ import { GUIDE_STEPS } from './guideSteps';
 
 const SPOT_PAD = 6; // breathing room around the spotlighted element
 const DIM = 'rgba(15,23,42,0.55)';
+// How many frames the measure loop keeps tracking a target whose entrance
+// animation is still moving it (~750ms at 60fps).
+const SETTLE_FRAMES = 45;
 
 interface SpotRect {
   top: number;
@@ -14,6 +17,16 @@ interface SpotRect {
   width: number;
   height: number;
 }
+
+const sameRect = (a: SpotRect | null, b: SpotRect | null) =>
+  a === null && b === null
+    ? true
+    : !!a &&
+      !!b &&
+      Math.abs(a.top - b.top) < 0.5 &&
+      Math.abs(a.left - b.left) < 0.5 &&
+      Math.abs(a.width - b.width) < 0.5 &&
+      Math.abs(a.height - b.height) < 0.5;
 
 /**
  * The spotlight tour. Lives INSIDE the phone frame's overflow-hidden container so
@@ -28,6 +41,7 @@ export function GuideOverlay({ container }: { container: React.RefObject<HTMLDiv
   const setTab = useSimulation((s) => s.setTab);
   const reduced = useReducedMotion();
 
+  const overlayRef = useRef<HTMLDivElement>(null);
   const [rect, setRect] = useState<SpotRect | null>(null);
   const [frameH, setFrameH] = useState(0);
 
@@ -36,56 +50,76 @@ export function GuideOverlay({ container }: { container: React.RefObject<HTMLDiv
 
   useEscape(() => endGuide(), open);
 
-  const measure = useCallback(() => {
+  // Measure the target relative to the overlay's OWN box — the exact coordinate
+  // space the cutout is positioned in. (Measuring against the phone frame's
+  // border-box put every spotlight off by the frame's 10px border.)
+  const measureOnce = useCallback((): SpotRect | null => {
     const frame = container.current;
-    if (!frame || !def) return;
-    const frameRect = frame.getBoundingClientRect();
-    setFrameH(frameRect.height);
-    if (!def.target) {
-      setRect(null);
-      return;
-    }
+    const overlay = overlayRef.current;
+    if (!frame || !overlay || !def) return null;
+    const base = overlay.getBoundingClientRect();
+    setFrameH(base.height);
+    if (!def.target) return null;
     const el = frame.querySelector<HTMLElement>(`[data-guide="${def.target}"]`);
     // Missing target (e.g. empty away digest after a reset) → centered card, even dim.
-    if (!el) {
-      setRect(null);
-      return;
-    }
-    // Scroll only the tab's own scroller — scrollIntoView would also scroll the page.
-    const scroller = frame.querySelector<HTMLElement>('[data-guide-scroller]');
-    if (scroller && scroller.contains(el)) {
-      const sr = scroller.getBoundingClientRect();
-      const er = el.getBoundingClientRect();
-      scroller.scrollTop += er.top - sr.top - (sr.height - er.height) / 2;
-    }
+    if (!el) return null;
     const r = el.getBoundingClientRect();
-    setRect({
-      top: r.top - frameRect.top - SPOT_PAD,
-      left: r.left - frameRect.left - SPOT_PAD,
+    return {
+      top: r.top - base.top - SPOT_PAD,
+      left: r.left - base.left - SPOT_PAD,
       width: r.width + SPOT_PAD * 2,
       height: r.height + SPOT_PAD * 2,
-    });
+    };
   }, [container, def]);
 
-  // On step entry: switch to the step's tab, wait two frames for it to render, measure.
+  // On step entry: switch tab, scroll the phone's inner scroller once (never the
+  // page), then keep measuring for a short window so the spotlight settles on the
+  // target's final position instead of a mid-animation snapshot.
   useEffect(() => {
     if (!def) return;
     setTab(def.tab);
-    let raf2 = 0;
-    const raf1 = requestAnimationFrame(() => {
-      raf2 = requestAnimationFrame(measure);
-    });
-    return () => {
-      cancelAnimationFrame(raf1);
-      cancelAnimationFrame(raf2);
+    let raf = 0;
+    let frames = 0;
+    let stable = 0;
+    let scrolled = false;
+    let last: SpotRect | null = null;
+    let first = true;
+
+    const tick = () => {
+      const frame = container.current;
+      if (frame && def.target && !scrolled) {
+        const el = frame.querySelector<HTMLElement>(`[data-guide="${def.target}"]`);
+        const scroller = frame.querySelector<HTMLElement>('[data-guide-scroller]');
+        if (el && scroller && scroller.contains(el)) {
+          const sr = scroller.getBoundingClientRect();
+          const er = el.getBoundingClientRect();
+          scroller.scrollTop += er.top - sr.top - (sr.height - er.height) / 2;
+        }
+        scrolled = true;
+      }
+      const next = measureOnce();
+      if (first || !sameRect(next, last)) {
+        first = false;
+        last = next;
+        stable = 0;
+        setRect(next);
+      } else {
+        stable += 1;
+      }
+      frames += 1;
+      if (frames < SETTLE_FRAMES && stable < 3) raf = requestAnimationFrame(tick);
     };
-  }, [def, setTab, measure]);
+
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [def, setTab, measureOnce, container]);
 
   useEffect(() => {
     if (!open) return;
-    window.addEventListener('resize', measure);
-    return () => window.removeEventListener('resize', measure);
-  }, [open, measure]);
+    const onResize = () => setRect(measureOnce());
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [open, measureOnce]);
 
   if (!open || !def || step === null) return null;
 
@@ -97,7 +131,7 @@ export function GuideOverlay({ container }: { container: React.RefObject<HTMLDiv
   const cardBelow = rect ? rect.top + rect.height / 2 < frameH / 2 : false;
 
   return (
-    <div className="absolute inset-0 z-[60] overflow-hidden">
+    <div ref={overlayRef} className="absolute inset-0 z-[60] overflow-hidden">
       {/* Dim layer: a cutout framed by a huge shadow, or an even wash when centered. */}
       {rect ? (
         <motion.div
