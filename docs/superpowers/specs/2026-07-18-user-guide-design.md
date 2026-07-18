@@ -28,7 +28,7 @@ RM console.
 
 ## Tour script
 
-Steps 1–8 show "Step x of 8" with progress dots. Step 0 is a centered welcome card.
+Steps 1–11 show "Step x of 11" with progress dots. Step 0 is a centered welcome card.
 
 | # | Tab | Target (`data-guide`) | Title | Teaches |
 |---|-----|----------------------|-------|---------|
@@ -37,10 +37,16 @@ Steps 1–8 show "Step x of 8" with progress dots. Step 0 is a centered welcome 
 | 2 | home | `team` | Meet your agent team | Yield, Cashflow, FX & Travel, Protection, Debt & Credit, Life-Event |
 | 3 | home | `feed` | Your agent feed | Proposal cards: approve/decline one-tap, Ask for plain-language reasoning, book a human RM |
 | 4 | home | `bell` | Never miss a decision | Badge = pending decisions; tap jumps to the first one |
-| 5 | control | `control-hub` | You set the autonomy | Observe / Suggest / Auto per agent + dollar limits; Protection never below Suggest |
-| 6 | activity | `money-hub` | Your money, the classic view | Accounts & balances plus the 3-week forward view of upcoming payments |
-| 7 | log | `log-hub` | Everything on the record | Every action logged with reasoning; reversible moves have Undo |
-| 8 | home | `restart` | Replay anytime | Points at the new top-bar icon; **Done** |
+| 5 | control | `control-hub` | You set the autonomy | Intro to the autonomy dial; Protection never below Suggest |
+| 6 | control | `mode-observe` | Observe — it just watches | Flags and logs only; never acts or asks (first agent card's button) |
+| 7 | control | `mode-suggest` | Suggest — it asks first | One-tap yes within the limit; bigger calls always come to you |
+| 8 | control | `mode-auto` | Auto — it acts within limits | Acts up to the dollar limit, then tells you; logged and reversible |
+| 9 | activity | `money-hub` | Your money, the classic view | Accounts & balances plus the 3-week forward view of upcoming payments |
+| 10 | log | `log-hub` | Everything on the record | Every action logged with reasoning; reversible moves have Undo |
+| 11 | home | `restart` | Replay anytime | Points at the new top-bar icon; **Done** |
+
+The three `mode-*` anchors live on the first agent card's (Yield) mode buttons only,
+via `data-guide={agentIdx === 0 ? `mode-${m.id}` : undefined}` in `ControlCenter.tsx`.
 
 Final copy lives in `guideSteps.ts`; the table above is the authoritative outline.
 
@@ -84,9 +90,14 @@ gate). Carries `data-guide="restart"` for step 8.
 
 - Each step's target is found via `container.querySelector('[data-guide="…"]')`
   where `container` is the phone frame's inner div (ref passed from `PhoneFrame`).
-- On step entry: switch tab if needed, `scrollIntoView({ block: 'center' })`, wait
-  two animation frames for render, then measure `getBoundingClientRect()` relative
-  to the container.
+- On step entry: switch tab if needed, scroll the phone's inner
+  `[data-guide-scroller]` once to center the target (never the page), then track
+  the target's rect over a short settle window (a rAF loop, ~45 frames, stopping
+  after 3 stable readings at 0.5 px tolerance) so entrance animations end in an
+  accurate spotlight rather than a mid-flight snapshot.
+- Rects are measured relative to the **overlay's own box**, not the phone frame's
+  border-box — the frame has a 10 px border, and measuring against it offset every
+  spotlight by exactly that border.
 - The spotlight is a rounded div at the target rect (~6 px padding) with
   `box-shadow: 0 0 0 2000px rgba(15,23,42,0.55)` — the phone frame's
   `overflow-hidden` clips the dim, so it cannot reach the demo panel.
