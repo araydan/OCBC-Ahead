@@ -13,6 +13,7 @@ export function TopBar() {
   const pushToast = useSimulation((s) => s.pushToast);
   const highlight = useUI((s) => s.highlight);
   const openAwayAll = useUI((s) => s.openAwayAll);
+  const startGuide = useUI((s) => s.startGuide);
 
   const pending = proposals.filter((p) => p.status === 'pending');
 
@@ -75,6 +76,14 @@ export function TopBar() {
                 {pending.length}
               </span>
             )}
+          </button>
+          <button
+            onClick={() => startGuide(false)}
+            data-guide="restart"
+            aria-label="Replay the app tour"
+            className="grid h-9 w-9 place-items-center rounded-full bg-white/12 text-white ring-1 ring-white/15 transition hover:bg-white/20"
+          >
+            <Icon name="info" size={18} />
           </button>
           <div
             aria-label={persona.name}
