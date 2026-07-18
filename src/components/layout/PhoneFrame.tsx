@@ -23,7 +23,7 @@ export function PhoneFrame() {
 
   // First visit only: open the tour at the welcome card.
   useEffect(() => {
-    if (!guideSeen()) startGuide(true);
+    if (!rmMode && !guideSeen()) startGuide(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

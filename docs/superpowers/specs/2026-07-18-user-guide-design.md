@@ -52,7 +52,7 @@ Final copy lives in `guideSteps.ts`; the table above is the authoritative outlin
 
 ## Interaction
 
-- **Skip** on every step; **Back / Next**; step 8 shows **Done**.
+- **Skip** on every step; **Back / Next**; step 11 shows **Done**.
 - Escape closes the tour (reuse `src/lib/useEscape.ts`). Clicking the dim does nothing.
 - The tour calls `setTab` for each step and returns to `home` when it ends.
 - Skip, Done, and Escape all mark the guide as seen.
@@ -66,7 +66,7 @@ Final copy lives in `guideSteps.ts`; the table above is the authoritative outlin
 `info` icon button in `TopBar` between the bell and the avatar, same frosted style as
 the bell (`h-9 w-9 rounded-full bg-white/12 ring-1 ring-white/15`),
 `aria-label="Replay the app tour"`. Tapping starts the tour at **step 1** (no welcome
-gate). Carries `data-guide="restart"` for step 8.
+gate). Carries `data-guide="restart"` for step 11.
 
 ## Auto-show & persistence
 

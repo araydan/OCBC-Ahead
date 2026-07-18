@@ -46,9 +46,9 @@ export function GuideOverlay({ container }: { container: React.RefObject<HTMLDiv
   const [frameH, setFrameH] = useState(0);
 
   const def = step !== null ? GUIDE_STEPS[step] : null;
-  const open = def !== null;
+  const open = def != null;
 
-  useEscape(() => endGuide(), open);
+  useEscape(endGuide, open);
 
   // Measure the target relative to the overlay's OWN box — the exact coordinate
   // space the cutout is positioned in. (Measuring against the phone frame's
@@ -89,13 +89,17 @@ export function GuideOverlay({ container }: { container: React.RefObject<HTMLDiv
       const frame = container.current;
       if (frame && def.target && !scrolled) {
         const el = frame.querySelector<HTMLElement>(`[data-guide="${def.target}"]`);
-        const scroller = frame.querySelector<HTMLElement>('[data-guide-scroller]');
-        if (el && scroller && scroller.contains(el)) {
-          const sr = scroller.getBoundingClientRect();
-          const er = el.getBoundingClientRect();
-          scroller.scrollTop += er.top - sr.top - (sr.height - er.height) / 2;
+        // Keep retrying until the target actually mounts (tab content may not have
+        // committed on the first frame) — the 45-frame cap still bounds the loop.
+        if (el) {
+          const scroller = frame.querySelector<HTMLElement>('[data-guide-scroller]');
+          if (scroller && scroller.contains(el)) {
+            const sr = scroller.getBoundingClientRect();
+            const er = el.getBoundingClientRect();
+            scroller.scrollTop += er.top - sr.top - (sr.height - er.height) / 2;
+          }
+          scrolled = true;
         }
-        scrolled = true;
       }
       const next = measureOnce();
       if (first || !sameRect(next, last)) {
