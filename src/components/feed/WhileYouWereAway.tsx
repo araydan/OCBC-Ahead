@@ -74,6 +74,7 @@ export function WhileYouWereAway({ proposals }: { proposals: AgentProposal[] }) 
 
   return (
     <motion.div
+      data-guide="away"
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       className="relative overflow-hidden rounded-2xl p-5 text-white shadow-glow"

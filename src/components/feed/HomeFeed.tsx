@@ -37,7 +37,7 @@ export function HomeFeed() {
 
       <AgentTeamStrip />
 
-      <div className="flex items-center justify-between px-1 pt-1">
+      <div data-guide="feed" className="flex items-center justify-between px-1 pt-1">
         <h3 className="text-[13px] font-bold uppercase tracking-wide text-ocbc-slate">Your agent feed</h3>
         {auditCount > 0 ? (
           <button

@@ -10,7 +10,7 @@ export function AuditLog() {
 
   return (
     <div className="space-y-3 px-4 pb-28 pt-3">
-      <div className="rounded-2xl bg-ocbc-ink p-4 text-white">
+      <div data-guide="log-hub" className="rounded-2xl bg-ocbc-ink p-4 text-white">
         <h2 className="flex items-center gap-2 text-[17px] font-extrabold">
           <Icon name="receipt" size={18} strokeWidth={2} /> Decision Log
         </h2>

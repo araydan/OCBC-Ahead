@@ -42,7 +42,7 @@ export function ActivityView() {
 
       {/* Where you stand — lead with what you HAVE (like a bank statement does);
           the loan-dominated net figure is context, not the headline. */}
-      <div className="rounded-2xl bg-ocbc-ink p-4 text-white">
+      <div data-guide="money-hub" className="rounded-2xl bg-ocbc-ink p-4 text-white">
         <h2 className="flex items-center gap-2 text-[12px] font-bold uppercase tracking-wide text-white/60">
           <Icon name="wallet" size={15} strokeWidth={2} /> Cash & savings · SGD
         </h2>

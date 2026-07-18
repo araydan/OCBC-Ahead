@@ -24,7 +24,7 @@ export function PhoneFrame() {
         ) : (
           <div className="flex h-full flex-col">
             <TopBar />
-            <div className="no-scrollbar flex-1 overflow-y-auto">
+            <div data-guide-scroller className="no-scrollbar flex-1 overflow-y-auto">
               {tab === 'home' && <HomeFeed />}
               {tab === 'control' && <ControlCenter />}
               {tab === 'activity' && <ActivityView />}

@@ -43,6 +43,7 @@ export function AgentTeamStrip() {
 
   return (
     <motion.button
+      data-guide="team"
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       onClick={() => setTab('control')}

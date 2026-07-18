@@ -65,6 +65,7 @@ export function TopBar() {
         <div className="flex items-center gap-2">
           <button
             onClick={onBell}
+            data-guide="bell"
             aria-label={pending.length > 0 ? `${pending.length} decisions waiting — jump to the first` : 'Notifications'}
             className="relative grid h-9 w-9 place-items-center rounded-full bg-white/12 text-white ring-1 ring-white/15 transition hover:bg-white/20"
           >
