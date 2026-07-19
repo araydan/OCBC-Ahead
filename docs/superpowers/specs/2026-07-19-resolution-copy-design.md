@@ -50,6 +50,7 @@ in the Log tab.
 
 **Cashflow — shortfall** (choices: topup / instalment / dismiss):
 - approved (used by `topup`): `Done — I moved ${money(topUp)} from your 360 to Everyday. You’ll stay above your buffer through the pinch.`
+- reverted (Log-tab undo of the executed top-up): `I moved the ${money(topUp)} back to your 360 — the top-up is undone, balances exactly as before.`
 - `instalment` choice gets `resolvedText`: `IRAS is now split into 12 GIRO instalments — no lump sum, and your buffer holds.`
 - rejected: `Okay — I’ll stay out of it, and I’ll warn you again closer to the dip.`
 
@@ -61,6 +62,8 @@ in the Log tab.
 **Protection — suspicious transfer:**
 - blocked: `Blocked and reported — ${money(t.amount)} never left your account. Money Lock stays on.`
 - confirmed: `Released — ${money(t.amount)} sent to ${t.payee}, since you confirmed it was you.`
+- No `reverted` copy by design: the protective hold is `reversible: false` (its
+  revert was a silent no-op) — a hold resolves only through Block / It-was-me.
 
 **Debt — refinance handoff:**
 - escalated: `Booked — your RM has the full refinancing pack and will call within a day.`
