@@ -1,15 +1,15 @@
-import type { Agent } from './base';
+﻿import type { Agent } from './base';
 import type { FinancialState, ProjectedOutcome, ProposalDraft, ReasoningStep } from '../types';
 import { forecastCashflow } from '../tools';
 import { fmtDate, money } from '../util';
 
 /**
- * Cashflow Agent — looks ahead so the customer never gets caught short, and
+ * Cashflow Agent â€” looks ahead so the customer never gets caught short, and
  * auto-allocates each paycheck within guardrails. Both behaviours adapt to the
  * same forward-looking forecast.
  */
 export const cashflowAgent: Agent = {
-  meta: { id: 'cashflow', name: 'Cashflow Agent', blurb: 'Looks ahead so you never get caught short', emoji: '🌊', accent: '#2F6BFF' },
+  meta: { id: 'cashflow', name: 'Cashflow Agent', blurb: 'Looks ahead so you never get caught short', emoji: 'ðŸŒŠ', accent: '#2F6BFF' },
   defaultConfig: { id: 'cashflow', mode: 'auto', limits: { maxAutoAllocateSGD: 3000 } },
 
   evaluate(event, { state }) {
@@ -22,7 +22,7 @@ export const cashflowAgent: Agent = {
 function shortfall(state: FinancialState): ProposalDraft | null {
   // Forecast the customer's *spending float*, not whatever surplus is parked in
   // the account right now. Cash above the comfort buffer is savings the Yield
-  // Agent sweeps into a Fixed Deposit — so the pinch a customer actually feels is
+  // Agent sweeps into a Fixed Deposit â€” so the pinch a customer actually feels is
   // bills vs. buffer. Anchoring here keeps the shortfall stable whether or not the
   // overnight sweep is currently in place (e.g. after the customer taps Undo).
   const current = state.accounts.find((a) => a.id === 'acc_current');
@@ -33,7 +33,7 @@ function shortfall(state: FinancialState): ProposalDraft | null {
   const gap = Math.round(state.comfortBuffer - forecast.projectedLow);
   const a360 = state.accounts.find((a) => a.id === 'acc_360');
   // Cover the gap (rounded up to a clean S$1k), but never propose moving more than
-  // the 360 Account actually holds — else the top-up overpromises or fails.
+  // the 360 Account actually holds â€” else the top-up overpromises or fails.
   const topUp = Math.min(a360?.balance ?? 0, Math.ceil(gap / 1000) * 1000);
   const bills = forecast.upcoming
     .filter((u) => u.amount < 0)
@@ -44,10 +44,10 @@ function shortfall(state: FinancialState): ProposalDraft | null {
   const reasoning: ReasoningStep[] = [
     { label: 'Forecast 30 days ahead', detail: 'Walked every scheduled bill and GIRO against your expected salary.' },
     { label: 'Found the pinch', detail: `${billText} land before your buffer recovers. Low point: ${money(forecast.projectedLow)} on ${fmtDate(forecast.lowDate)}.` },
-    { label: 'Checked your pots', detail: `Your 360 Account holds ${money(a360?.balance ?? 0)} — enough to bridge without breaking your Fixed Deposit.` },
+    { label: 'Checked your pots', detail: `Your 360 Account holds ${money(a360?.balance ?? 0)} â€” enough to bridge without breaking your Fixed Deposit.` },
   ];
   const projectedOutcome: ProjectedOutcome[] = [
-    { label: 'Projected low', value: `${money(forecast.projectedLow)} · ${fmtDate(forecast.lowDate)}`, tone: 'warn' },
+    { label: 'Projected low', value: `${money(forecast.projectedLow)} Â· ${fmtDate(forecast.lowDate)}`, tone: 'warn' },
     { label: 'Below buffer by', value: `-${money(gap)}`, tone: 'warn' },
     { label: 'If you top up', value: 'stays above buffer', tone: 'good' },
   ];
@@ -55,9 +55,9 @@ function shortfall(state: FinancialState): ProposalDraft | null {
   return {
     agentId: 'cashflow',
     scenario: 'cashflow-shortfall',
-    kind: 'needs-approval', // a multi-option decision — deliberately handed to the customer
-    title: 'A tight stretch is coming — here are your options',
-    summary: `After ${billText}, your Everyday Account is projected to dip to ${money(forecast.projectedLow)} on ${fmtDate(forecast.lowDate)} — ${money(gap)} below your ${money(state.comfortBuffer)} comfort buffer. Nothing's wrong yet; I caught it early.`,
+    kind: 'needs-approval', // a multi-option decision â€” deliberately handed to the customer
+    title: 'A tight stretch is coming â€” here are your options',
+    summary: `After ${billText}, your Everyday Account is projected to dip to ${money(forecast.projectedLow)} on ${fmtDate(forecast.lowDate)} â€” ${money(gap)} below your ${money(state.comfortBuffer)} comfort buffer. Nothing's wrong yet; I caught it early.`,
     reasoning,
     confidence: 0.86,
     dataUsed: ['Scheduled bills & GIRO', 'Salary date & amount', 'All account balances', 'Your comfort buffer'],
@@ -65,18 +65,18 @@ function shortfall(state: FinancialState): ProposalDraft | null {
     action: { type: 'moveFunds', label: `Top up ${money(topUp)} from 360`, params: { fromId: 'acc_360', toId: 'acc_current', amount: topUp }, reversible: true },
     choices: [
       { id: 'topup', label: `Top up ${money(topUp)} from 360`, kind: 'primary', resolvesTo: 'approved' },
-      { id: 'instalment', label: 'Split IRAS into GIRO instalments', kind: 'secondary', resolvesTo: 'approved', resolvedText: 'IRAS is now split into 12 GIRO instalments — no lump sum, and your buffer holds.' },
-      { id: 'dismiss', label: "Dismiss — I'll handle it", kind: 'secondary', resolvesTo: 'rejected' },
+      { id: 'instalment', label: 'Split IRAS into GIRO instalments', kind: 'secondary', resolvesTo: 'approved', resolvedText: 'IRAS is now split into 12 GIRO instalments â€” no lump sum, and your buffer holds.' },
+      { id: 'dismiss', label: "Dismiss â€” I'll handle it", kind: 'secondary', resolvesTo: 'rejected' },
     ],
     resolutionCopy: {
-      approved: `Done — I moved ${money(topUp)} from your 360 to Everyday. You'll stay above your buffer through the pinch.`,
-      rejected: `Okay — I'll stay out of it, and I'll warn you again closer to the dip.`,
+      approved: `Done â€” I moved ${money(topUp)} from your 360 to Everyday. You’ll stay above your buffer through the pinch.`,
+      rejected: `Okay â€” I’ll stay out of it, and I’ll warn you again closer to the dip.`,
     },
     priority: 3,
     voices: {
       observed: {
-        title: 'A tight stretch is coming — flagged for you',
-        summary: `After ${billText}, your Everyday Account is projected to dip to ${money(forecast.projectedLow)} on ${fmtDate(forecast.lowDate)} — ${money(gap)} below your ${money(state.comfortBuffer)} comfort buffer. I'm in Observe, so I've flagged it and taken no action.`,
+        title: 'A tight stretch is coming â€” flagged for you',
+        summary: `After ${billText}, your Everyday Account is projected to dip to ${money(forecast.projectedLow)} on ${fmtDate(forecast.lowDate)} â€” ${money(gap)} below your ${money(state.comfortBuffer)} comfort buffer. I'm in Observe, so I've flagged it and taken no action.`,
       },
     },
   };
@@ -110,7 +110,7 @@ function allocate(state: FinancialState, salary: number): ProposalDraft | null {
   // third describes the move itself, so it carries the tense.
   const reasoningBase: ReasoningStep[] = [
     { label: 'Payday detected', detail: `${money(salary)} salary credited to your Everyday Account.` },
-    { label: 'Applied your rule', detail: `15% BTO · 10% Japan · 10% emergency = ${money(baseTotal)}.` },
+    { label: 'Applied your rule', detail: `15% BTO Â· 10% Japan Â· 10% emergency = ${money(baseTotal)}.` },
   ];
   const reasoning: ReasoningStep[] = [
     ...reasoningBase,
@@ -125,10 +125,10 @@ function allocate(state: FinancialState, salary: number): ProposalDraft | null {
       : { label: 'Within guardrails', detail: `${money(movedNow)} is within your ${money(3000)} auto-allocate limit.` },
   ];
 
-  const btoRow: ProjectedOutcome = { label: 'BTO reno goal', value: `${btoPctBefore}% → ${btoPctAfter}%`, tone: 'good' };
+  const btoRow: ProjectedOutcome = { label: 'BTO reno goal', value: `${btoPctBefore}% â†’ ${btoPctAfter}%`, tone: 'good' };
   const deferredRow: ProjectedOutcome[] = deferred > 0 ? [{ label: 'Deferred (auto, after IRAS)', value: money(deferred), tone: 'neutral' }] : [];
   // On a not-yet-acted card, "auto, after IRAS" would promise a move that may
-  // never happen (Observe never acts) — keep the planned row conditional too.
+  // never happen (Observe never acts) â€” keep the planned row conditional too.
   const deferredRowPlanned: ProjectedOutcome[] = deferred > 0 ? [{ label: 'Would defer (until IRAS clears)', value: money(deferred), tone: 'neutral' }] : [];
   const projectedOutcome: ProjectedOutcome[] = [
     { label: 'Moved to goals now', value: money(movedNow), tone: 'good' },
@@ -145,9 +145,9 @@ function allocate(state: FinancialState, salary: number): ProposalDraft | null {
     agentId: 'cashflow',
     scenario: 'salary-allocation',
     kind: 'action-taken',
-    title: tight ? 'Payday — split adjusted around your tax bill' : 'Payday — I split it the way you set',
+    title: tight ? 'Payday â€” split adjusted around your tax bill' : 'Payday â€” I split it the way you set',
     summary: tight
-      ? `${money(salary)} landed. Your rule is ${money(baseTotal)} to goals, but IRAS is due in days — so I moved the priority ${money(movedNow)} to your BTO goal now and will auto-move the remaining ${money(deferred)} once tax clears.`
+      ? `${money(salary)} landed. Your rule is ${money(baseTotal)} to goals, but IRAS is due in days â€” so I moved the priority ${money(movedNow)} to your BTO goal now and will auto-move the remaining ${money(deferred)} once tax clears.`
       : `${money(salary)} landed. I split ${money(movedNow)} across your goals exactly as you set and left the rest for spending.`,
     reasoning,
     confidence: 0.9,
@@ -159,28 +159,29 @@ function allocate(state: FinancialState, salary: number): ProposalDraft | null {
       { id: 'undo', label: 'Undo', kind: 'secondary', resolvesTo: 'reverted' },
     ],
     resolutionCopy: {
-      approved: `Done — ${money(movedNow)} is in your goals${deferred > 0 ? `, and I'll move the ${money(deferred)} after IRAS clears` : ''}.`,
-      reverted: `I took the ${money(movedNow)} back out of your goals — your Everyday Account is exactly as before.`,
-      rejected: `Okay — this month's pay stays put. Your allocation rule is untouched for next time.`,
+      approved: `Done â€” ${money(movedNow)} is in your goals${deferred > 0 ? `, and I’ll move the ${money(deferred)} after IRAS clears` : ''}.`,
+      reverted: `I took the ${money(movedNow)} back out of your goals â€” your Everyday Account is exactly as before.`,
+      rejected: `Okay â€” this month’s pay stays put. Your allocation rule is untouched for next time.`,
     },
     priority: 2,
     voices: {
       suggested: {
-        title: tight ? 'Payday — a split adjusted around your tax bill, one tap away' : 'Payday — ready to split it the way you set',
+        title: tight ? 'Payday â€” a split adjusted around your tax bill, one tap away' : 'Payday â€” ready to split it the way you set',
         summary: tight
-          ? `${money(salary)} landed. Your rule sends ${money(baseTotal)} to goals, but IRAS is due in days — so the plan is the priority ${money(movedNow)} to your BTO goal now and the remaining ${money(deferred)} once tax clears. One tap and it's done.`
-          : `${money(salary)} landed. Your rule sends ${money(movedNow)} to your goals — everything is prepared and one tap away.`,
+          ? `${money(salary)} landed. Your rule sends ${money(baseTotal)} to goals, but IRAS is due in days â€” so the plan is the priority ${money(movedNow)} to your BTO goal now and the remaining ${money(deferred)} once tax clears. One tap and it's done.`
+          : `${money(salary)} landed. Your rule sends ${money(movedNow)} to your goals â€” everything is prepared and one tap away.`,
         reasoning: reasoningPlanned,
         projectedOutcome: projectedOutcomePlanned,
       },
       observed: {
-        title: 'Payday spotted — allocation noted, not made',
+        title: 'Payday spotted â€” allocation noted, not made',
         summary: tight
-          ? `${money(salary)} landed. Your rule would send ${money(baseTotal)} to goals — the priority ${money(movedNow)} to BTO first with IRAS due, then ${money(deferred)} after tax — but I'm in Observe, so I've only noted it. Nothing moved.`
-          : `${money(salary)} landed. Your rule would send ${money(movedNow)} to your goals — but I'm in Observe, so I've only noted it. Nothing moved.`,
+          ? `${money(salary)} landed. Your rule would send ${money(baseTotal)} to goals â€” the priority ${money(movedNow)} to BTO first with IRAS due, then ${money(deferred)} after tax â€” but I'm in Observe, so I've only noted it. Nothing moved.`
+          : `${money(salary)} landed. Your rule would send ${money(movedNow)} to your goals â€” but I'm in Observe, so I've only noted it. Nothing moved.`,
         reasoning: reasoningPlanned,
         projectedOutcome: projectedOutcomePlanned,
       },
     },
   };
 }
+

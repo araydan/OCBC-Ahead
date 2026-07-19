@@ -1,13 +1,13 @@
-import type { Agent } from './base';
+﻿import type { Agent } from './base';
 import type { ProjectedOutcome, ReasoningStep } from '../types';
 import { fmtDate, money } from '../util';
 
 /**
- * FX & Travel Agent — cross-journey orchestration. A flight booking (a spend
+ * FX & Travel Agent â€” cross-journey orchestration. A flight booking (a spend
  * signal) becomes an FX + cards opportunity, tied back to the customer's goals.
  */
 export const fxTravelAgent: Agent = {
-  meta: { id: 'fxTravel', name: 'FX & Travel Agent', blurb: 'Handles trips and currencies', emoji: '✈️', accent: '#E8A33D' },
+  meta: { id: 'fxTravel', name: 'FX & Travel Agent', blurb: 'Handles trips and currencies', emoji: 'âœˆï¸', accent: '#E8A33D' },
   defaultConfig: { id: 'fxTravel', mode: 'suggest', limits: { maxAutoFxSGD: 2500 } },
 
   evaluate(event, { state }) {
@@ -17,24 +17,24 @@ export const fxTravelAgent: Agent = {
     const japanPct = japan ? Math.round((japan.saved / japan.target) * 100) : 0;
 
     const reasoning: ReasoningStep[] = [
-      { label: 'Trip detected', detail: `${money(p.flightAmount)} ${p.airline} charge → ${p.destination}, ${fmtDate(p.tripDate)}.` },
-      { label: 'FX timing', detail: `${p.pair} is ${p.lockRate} — near the top of its 90-day range; it usually softens before year-end.` },
-      { label: 'Goal aware', detail: `Your Japan goal is ${japanPct}% funded — locking now protects that budget.` },
-      { label: 'Card fit', detail: 'Your OCBC 90°N card waives FX fees in Japan vs 3.25% on your 365 card.' },
+      { label: 'Trip detected', detail: `${money(p.flightAmount)} ${p.airline} charge â†’ ${p.destination}, ${fmtDate(p.tripDate)}.` },
+      { label: 'FX timing', detail: `${p.pair} is ${p.lockRate} â€” near the top of its 90-day range; it usually softens before year-end.` },
+      { label: 'Goal aware', detail: `Your Japan goal is ${japanPct}% funded â€” locking now protects that budget.` },
+      { label: 'Card fit', detail: 'Your OCBC 90Â°N card waives FX fees in Japan vs 3.25% on your 365 card.' },
     ];
     const projectedOutcome: ProjectedOutcome[] = [
       { label: 'Est. saving vs waiting', value: `~${money(p.estSaving)}`, tone: 'good' },
-      { label: 'On a trip budget of', value: `¥${p.budgetJPY.toLocaleString()}`, tone: 'neutral' },
+      { label: 'On a trip budget of', value: `Â¥${p.budgetJPY.toLocaleString()}`, tone: 'neutral' },
     ];
 
     return {
       agentId: 'fxTravel',
       scenario: 'fx-travel',
-      // Intent is "I'd act on this within your limits" — the policy engine decides
+      // Intent is "I'd act on this within your limits" â€” the policy engine decides
       // whether that means auto-lock (Auto + within limit) or ask first.
       kind: 'action-taken',
-      title: `${p.destination} in September — lock a good ¥ rate?`,
-      summary: `I saw your ${p.airline} booking to ${p.destination} (${fmtDate(p.tripDate)}). ${p.pair} is strong at ${p.lockRate}, so locking today's rate on ${money(p.sgdLock)} in your Global Currency Account protects your Japan budget — and your 90°N card is the one to carry there.`,
+      title: `${p.destination} in September â€” lock a good Â¥ rate?`,
+      summary: `I saw your ${p.airline} booking to ${p.destination} (${fmtDate(p.tripDate)}). ${p.pair} is strong at ${p.lockRate}, so locking today's rate on ${money(p.sgdLock)} in your Global Currency Account protects your Japan budget â€” and your 90Â°N card is the one to carry there.`,
       reasoning,
       confidence: 0.81,
       dataUsed: ['Card transactions (flight booking)', `${p.pair} 90-day trend`, 'Your Japan goal', 'OCBC card FX terms'],
@@ -47,21 +47,22 @@ export const fxTravelAgent: Agent = {
         { id: 'undo', label: 'Undo', kind: 'secondary', resolvesTo: 'reverted' },
       ],
       resolutionCopy: {
-        approved: `Locked — ${p.pair} at ${p.lockRate} on ${money(p.sgdLock)}. Your Japan budget is set.`,
-        reverted: `I unwound the lock — ${money(p.sgdLock)} is back in SGD at market rate.`,
-        rejected: `No lock — you'll ride the market rate; I'll flag it if the window improves.`,
+        approved: `Locked â€” ${p.pair} at ${p.lockRate} on ${money(p.sgdLock)}. Your Japan budget is set.`,
+        reverted: `I unwound the lock â€” ${money(p.sgdLock)} is back in SGD at market rate.`,
+        rejected: `No lock â€” you’ll ride the market rate; I’ll flag it if the window improves.`,
       },
       priority: 2,
       voices: {
         acted: {
-          title: `${p.destination} in September — I locked your ¥ rate`,
-          summary: `I saw your ${p.airline} booking to ${p.destination} (${fmtDate(p.tripDate)}). ${p.pair} was strong at ${p.lockRate}, so I locked today's rate on ${money(p.sgdLock)} in your Global Currency Account — your Japan budget is protected, and your 90°N card is the one to carry there.`,
+          title: `${p.destination} in September â€” I locked your Â¥ rate`,
+          summary: `I saw your ${p.airline} booking to ${p.destination} (${fmtDate(p.tripDate)}). ${p.pair} was strong at ${p.lockRate}, so I locked today's rate on ${money(p.sgdLock)} in your Global Currency Account â€” your Japan budget is protected, and your 90Â°N card is the one to carry there.`,
         },
         observed: {
-          title: `${p.destination} in September — a good ¥ window, noted`,
-          summary: `I saw your ${p.airline} booking to ${p.destination} (${fmtDate(p.tripDate)}). ${p.pair} is strong at ${p.lockRate} — locking ${money(p.sgdLock)} would protect your Japan budget. I'm in Observe, so I've only noted it.`,
+          title: `${p.destination} in September â€” a good Â¥ window, noted`,
+          summary: `I saw your ${p.airline} booking to ${p.destination} (${fmtDate(p.tripDate)}). ${p.pair} is strong at ${p.lockRate} â€” locking ${money(p.sgdLock)} would protect your Japan budget. I'm in Observe, so I've only noted it.`,
         },
       },
     };
   },
 };
+
