@@ -144,6 +144,9 @@ export interface ProposalChoice {
   label: string;
   kind: 'primary' | 'secondary' | 'danger';
   resolvesTo: ProposalStatus;
+  /** First-person statement for this choice when its status-keyed copy would be
+   * ambiguous (e.g. two approve options with different effects). */
+  resolvedText?: string;
 }
 
 /** Partial copy override applied when a proposal's final disposition differs
@@ -178,6 +181,9 @@ export interface ProposalDraft {
     suggested?: VoicePatch;
     observed?: VoicePatch;
   };
+  /** First-person statements the agent gives AFTER the customer resolves the
+   * card, keyed by the final status. Amounts are interpolated at draft time. */
+  resolutionCopy?: Partial<Record<ProposalStatus, string>>;
 }
 
 export interface AgentProposal extends ProposalDraft {
@@ -185,6 +191,7 @@ export interface AgentProposal extends ProposalDraft {
   createdAt: string; // simulated time
   status: ProposalStatus;
   policy: PolicyDecision; // the WHY behind auto vs ask vs observe
+  resolutionNote?: string; // the agent's in-words statement once resolved
 }
 
 // ── Autonomy policy engine ───────────────────────────────────────────────────
