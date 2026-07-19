@@ -35,9 +35,12 @@ export const yieldAgent: Agent = {
       .map((u) => `${money(-u.amount)} ${u.label.toLowerCase()}`)
       .join(' and ');
 
-    const reasoning: ReasoningStep[] = [
+    const reasoningBase: ReasoningStep[] = [
       { label: 'Spotted idle cash', detail: `${money(from.balance)} in ${from.name}, untouched for ${idleDays} days — well above what your spending needs.` },
       { label: 'Compared the options', detail: `Your account pays ${pct(fromApy)}; a 6-month OCBC Fixed Deposit pays ${pct(targetApy)}, capital-guaranteed.` },
+    ];
+    const reasoning: ReasoningStep[] = [
+      ...reasoningBase,
       {
         label: 'Coordinated with Cashflow',
         detail: trimmed
@@ -45,11 +48,25 @@ export const yieldAgent: Agent = {
           : `Kept your ${money(state.comfortBuffer)} comfort buffer fully liquid.`,
       },
     ];
+    const reasoningPlanned: ReasoningStep[] = [
+      ...reasoningBase,
+      {
+        label: 'Coordinated with Cashflow',
+        detail: trimmed
+          ? `You allowed up to ${money(requested)}, but ${nextBills} are due soon — so the plan moves ${money(amount)} and leaves your ${money(state.comfortBuffer)} buffer liquid.`
+          : `Keeps your ${money(state.comfortBuffer)} comfort buffer fully liquid.`,
+      },
+    ];
 
     const projectedOutcome: ProjectedOutcome[] = [
       { label: 'Extra interest / year', value: `+${money(annualGain)}`, tone: 'good' },
       { label: 'Moved', value: money(amount), tone: 'neutral' },
       { label: 'Kept liquid', value: money(state.comfortBuffer), tone: 'neutral' },
+    ];
+    const projectedOutcomePlanned: ProjectedOutcome[] = [
+      { label: 'Extra interest / year', value: `+${money(annualGain)}`, tone: 'good' },
+      { label: 'Would move', value: money(amount), tone: 'neutral' },
+      { label: 'Stays liquid', value: money(state.comfortBuffer), tone: 'neutral' },
     ];
 
     return {
@@ -78,6 +95,20 @@ export const yieldAgent: Agent = {
         { id: 'undo', label: 'Undo & return funds', kind: 'secondary', resolvesTo: 'reverted' },
       ],
       priority: 2,
+      voices: {
+        suggested: {
+          title: 'Your idle cash could be working overnight',
+          summary: `${money(from.balance)} has been sitting in ${from.name} earning just ${pct(fromApy)} for ${idleDays} days. I'd move ${money(amount)} into a 6-month OCBC Fixed Deposit at ${pct(targetApy)} — your ${money(state.comfortBuffer)} buffer stays liquid, and one tap makes it happen.`,
+          reasoning: reasoningPlanned,
+          projectedOutcome: projectedOutcomePlanned,
+        },
+        observed: {
+          title: 'Idle cash spotted — noted, not moved',
+          summary: `${money(from.balance)} has been sitting in ${from.name} earning just ${pct(fromApy)} for ${idleDays} days. A 6-month OCBC Fixed Deposit at ${pct(targetApy)} would add about +${money(annualGain)}/year — but I'm in Observe, so I've only noted it. Nothing moved.`,
+          reasoning: reasoningPlanned,
+          projectedOutcome: projectedOutcomePlanned,
+        },
+      },
     };
   },
 };

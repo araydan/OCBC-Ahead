@@ -69,6 +69,12 @@ function shortfall(state: FinancialState): ProposalDraft | null {
       { id: 'dismiss', label: "Dismiss — I'll handle it", kind: 'secondary', resolvesTo: 'rejected' },
     ],
     priority: 3,
+    voices: {
+      observed: {
+        title: 'A tight stretch is coming — flagged for you',
+        summary: `After ${billText}, your Everyday Account is projected to dip to ${money(forecast.projectedLow)} on ${fmtDate(forecast.lowDate)} — ${money(gap)} below your ${money(state.comfortBuffer)} comfort buffer. I'm in Observe, so I've flagged it and taken no action.`,
+      },
+    },
   };
 }
 
@@ -96,17 +102,37 @@ function allocate(state: FinancialState, salary: number): ProposalDraft | null {
   const btoPctBefore = Math.round((bto.saved / bto.target) * 100);
   const btoPctAfter = Math.round(((bto.saved + baseBto) / bto.target) * 100);
 
-  const reasoning: ReasoningStep[] = [
+  // The first two reasoning steps are analysis and hold in every voice; only the
+  // third describes the move itself, so it carries the tense.
+  const reasoningBase: ReasoningStep[] = [
     { label: 'Payday detected', detail: `${money(salary)} salary credited to your Everyday Account.` },
     { label: 'Applied your rule', detail: `15% BTO · 10% Japan · 10% emergency = ${money(baseTotal)}.` },
+  ];
+  const reasoning: ReasoningStep[] = [
+    ...reasoningBase,
     tight
       ? { label: 'Protected your buffer', detail: `IRAS is due within the week, so I deferred ${money(deferred)} (Japan + emergency) and moved only the BTO ${money(baseBto)} now.` }
       : { label: 'Within guardrails', detail: `${money(movedNow)} is within your ${money(3000)} auto-allocate limit.` },
   ];
+  const reasoningPlanned: ReasoningStep[] = [
+    ...reasoningBase,
+    tight
+      ? { label: 'Protecting your buffer', detail: `IRAS is due within the week, so the plan defers ${money(deferred)} (Japan + emergency) and moves only the BTO ${money(baseBto)} now.` }
+      : { label: 'Within guardrails', detail: `${money(movedNow)} is within your ${money(3000)} auto-allocate limit.` },
+  ];
 
-  const projectedOutcome: ProjectedOutcome[] = [{ label: 'Moved to goals now', value: money(movedNow), tone: 'good' }];
-  if (deferred > 0) projectedOutcome.push({ label: 'Deferred (auto, after IRAS)', value: money(deferred), tone: 'neutral' });
-  projectedOutcome.push({ label: 'BTO reno goal', value: `${btoPctBefore}% → ${btoPctAfter}%`, tone: 'good' });
+  const btoRow: ProjectedOutcome = { label: 'BTO reno goal', value: `${btoPctBefore}% → ${btoPctAfter}%`, tone: 'good' };
+  const deferredRow: ProjectedOutcome[] = deferred > 0 ? [{ label: 'Deferred (auto, after IRAS)', value: money(deferred), tone: 'neutral' }] : [];
+  const projectedOutcome: ProjectedOutcome[] = [
+    { label: 'Moved to goals now', value: money(movedNow), tone: 'good' },
+    ...deferredRow,
+    btoRow,
+  ];
+  const projectedOutcomePlanned: ProjectedOutcome[] = [
+    { label: 'Would move to goals now', value: money(movedNow), tone: 'good' },
+    ...deferredRow,
+    btoRow,
+  ];
 
   return {
     agentId: 'cashflow',
@@ -126,5 +152,23 @@ function allocate(state: FinancialState, salary: number): ProposalDraft | null {
       { id: 'undo', label: 'Undo', kind: 'secondary', resolvesTo: 'reverted' },
     ],
     priority: 2,
+    voices: {
+      suggested: {
+        title: tight ? 'Payday — a split adjusted around your tax bill, one tap away' : 'Payday — ready to split it the way you set',
+        summary: tight
+          ? `${money(salary)} landed. Your rule sends ${money(baseTotal)} to goals, but IRAS is due in days — so the plan is the priority ${money(movedNow)} to your BTO goal now and the remaining ${money(deferred)} once tax clears. One tap and it's done.`
+          : `${money(salary)} landed. Your rule sends ${money(movedNow)} to your goals — everything is prepared and one tap away.`,
+        reasoning: reasoningPlanned,
+        projectedOutcome: projectedOutcomePlanned,
+      },
+      observed: {
+        title: 'Payday spotted — allocation noted, not made',
+        summary: tight
+          ? `${money(salary)} landed. Your rule would send ${money(baseTotal)} to goals — the priority ${money(movedNow)} to BTO first with IRAS due, then ${money(deferred)} after tax — but I'm in Observe, so I've only noted it. Nothing moved.`
+          : `${money(salary)} landed. Your rule would send ${money(movedNow)} to your goals — but I'm in Observe, so I've only noted it. Nothing moved.`,
+        reasoning: reasoningPlanned,
+        projectedOutcome: projectedOutcomePlanned,
+      },
+    },
   };
 }
