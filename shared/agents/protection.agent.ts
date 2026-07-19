@@ -44,6 +44,10 @@ export const protectionAgent: Agent = {
         { id: 'block', label: 'Block & report', kind: 'danger', resolvesTo: 'blocked' },
         { id: 'release', label: 'It was me — release', kind: 'secondary', resolvesTo: 'confirmed' },
       ],
+      resolutionCopy: {
+        blocked: `Blocked and reported — ${money(t.amount)} never left your account. Money Lock stays on.`,
+        confirmed: `Released — ${money(t.amount)} sent to ${t.payee}, since you confirmed it was you.`,
+      },
       priority: 5,
     };
   },

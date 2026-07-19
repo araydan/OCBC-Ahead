@@ -94,6 +94,11 @@ export const yieldAgent: Agent = {
         { id: 'keep', label: 'Keep it', kind: 'primary', resolvesTo: 'approved' },
         { id: 'undo', label: 'Undo & return funds', kind: 'secondary', resolvesTo: 'reverted' },
       ],
+      resolutionCopy: {
+        approved: `Done — ${money(amount)} is now in the 6-month Fixed Deposit at ${pct(targetApy)}. Your buffer never moved.`,
+        reverted: `I closed the Fixed Deposit and put ${money(amount)} back in ${from.name} — balances exactly as before.`,
+        rejected: `Okay — I left it as cash. ${money(amount)} stays liquid in ${from.name}.`,
+      },
       priority: 2,
       voices: {
         suggested: {

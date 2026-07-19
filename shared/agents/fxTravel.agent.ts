@@ -46,6 +46,11 @@ export const fxTravelAgent: Agent = {
         { id: 'lock', label: `Lock ${money(p.sgdLock)} @ ${p.lockRate}`, kind: 'primary', resolvesTo: 'approved' },
         { id: 'undo', label: 'Undo', kind: 'secondary', resolvesTo: 'reverted' },
       ],
+      resolutionCopy: {
+        approved: `Locked — ${p.pair} at ${p.lockRate} on ${money(p.sgdLock)}. Your Japan budget is set.`,
+        reverted: `I unwound the lock — ${money(p.sgdLock)} is back in SGD at market rate.`,
+        rejected: `No lock — you'll ride the market rate; I'll flag it if the window improves.`,
+      },
       priority: 2,
       voices: {
         acted: {

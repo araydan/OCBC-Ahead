@@ -44,6 +44,10 @@ export const debtAgent: Agent = {
         { id: 'book', label: 'Book a call with an RM', kind: 'primary', resolvesTo: 'escalated' },
         { id: 'notnow', label: 'Not now', kind: 'secondary', resolvesTo: 'rejected' },
       ],
+      resolutionCopy: {
+        escalated: `Booked — your RM has the full refinancing pack and will call within a day.`,
+        rejected: `Parked — I'll keep watching rates and flag it again if the saving grows.`,
+      },
       priority: 1,
     };
   },

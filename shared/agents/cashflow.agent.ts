@@ -65,9 +65,13 @@ function shortfall(state: FinancialState): ProposalDraft | null {
     action: { type: 'moveFunds', label: `Top up ${money(topUp)} from 360`, params: { fromId: 'acc_360', toId: 'acc_current', amount: topUp }, reversible: true },
     choices: [
       { id: 'topup', label: `Top up ${money(topUp)} from 360`, kind: 'primary', resolvesTo: 'approved' },
-      { id: 'instalment', label: 'Split IRAS into GIRO instalments', kind: 'secondary', resolvesTo: 'approved' },
+      { id: 'instalment', label: 'Split IRAS into GIRO instalments', kind: 'secondary', resolvesTo: 'approved', resolvedText: 'IRAS is now split into 12 GIRO instalments — no lump sum, and your buffer holds.' },
       { id: 'dismiss', label: "Dismiss — I'll handle it", kind: 'secondary', resolvesTo: 'rejected' },
     ],
+    resolutionCopy: {
+      approved: `Done — I moved ${money(topUp)} from your 360 to Everyday. You'll stay above your buffer through the pinch.`,
+      rejected: `Okay — I'll stay out of it, and I'll warn you again closer to the dip.`,
+    },
     priority: 3,
     voices: {
       observed: {
@@ -154,6 +158,11 @@ function allocate(state: FinancialState, salary: number): ProposalDraft | null {
       { id: 'keep', label: 'Looks good', kind: 'primary', resolvesTo: 'approved' },
       { id: 'undo', label: 'Undo', kind: 'secondary', resolvesTo: 'reverted' },
     ],
+    resolutionCopy: {
+      approved: `Done — ${money(movedNow)} is in your goals${deferred > 0 ? `, and I'll move the ${money(deferred)} after IRAS clears` : ''}.`,
+      reverted: `I took the ${money(movedNow)} back out of your goals — your Everyday Account is exactly as before.`,
+      rejected: `Okay — this month's pay stays put. Your allocation rule is untouched for next time.`,
+    },
     priority: 2,
     voices: {
       suggested: {
