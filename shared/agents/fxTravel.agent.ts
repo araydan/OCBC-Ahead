@@ -47,6 +47,16 @@ export const fxTravelAgent: Agent = {
         { id: 'undo', label: 'Undo', kind: 'secondary', resolvesTo: 'reverted' },
       ],
       priority: 2,
+      voices: {
+        acted: {
+          title: `${p.destination} in September — I locked your ¥ rate`,
+          summary: `I saw your ${p.airline} booking to ${p.destination} (${fmtDate(p.tripDate)}). ${p.pair} was strong at ${p.lockRate}, so I locked today's rate on ${money(p.sgdLock)} in your Global Currency Account — your Japan budget is protected, and your 90°N card is the one to carry there.`,
+        },
+        observed: {
+          title: `${p.destination} in September — a good ¥ window, noted`,
+          summary: `I saw your ${p.airline} booking to ${p.destination} (${fmtDate(p.tripDate)}). ${p.pair} is strong at ${p.lockRate} — locking ${money(p.sgdLock)} would protect your Japan budget. I'm in Observe, so I've only noted it.`,
+        },
+      },
     };
   },
 };
