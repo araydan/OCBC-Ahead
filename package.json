@@ -11,6 +11,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "smoke": "tsx scripts/smoke.ts",
+    "voice-check": "tsx scripts/voice-check.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
