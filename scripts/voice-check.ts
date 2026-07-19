@@ -67,6 +67,32 @@ console.log(`\n— AUTO mode: the executed FX card must not read as an open ques
   }
 }
 
+console.log(`\n— RESOLUTION copy: every actionable card must answer in words`);
+{
+  const configs = structuredClone(DEFAULT_CONFIGS);
+  const actionable = persona.events.filter((e) =>
+    ['salary', 'idle-cash', 'travel-signal', 'bill-forecast', 'outgoing-transfer', 'refinance-signal'].includes(e.type),
+  );
+  for (const event of actionable) {
+    const res = dispatch(event, structuredClone(persona.initialState), configs);
+    for (const p of res.proposals) {
+      if (!p.choices || p.choices.length === 0) continue;
+      for (const c of p.choices) {
+        const note = c.resolvedText ?? p.resolutionCopy?.[c.resolvesTo];
+        if (!note) fail(`[${event.type}] "${p.title}" choice "${c.id}" has no resolution statement for ${c.resolvesTo}`);
+        // Undo on a still-pending card resolves as a dismiss — that path needs words too.
+        if (c.resolvesTo === 'reverted' && !p.resolutionCopy?.rejected) {
+          fail(`[${event.type}] "${p.title}" has an undo choice but no 'rejected' copy for the pending-dismiss path`);
+        }
+      }
+      const instalment = p.choices.find((c) => c.id === 'instalment');
+      if (instalment && !instalment.resolvedText) {
+        fail(`[${event.type}] instalment choice must carry resolvedText (shares 'approved' with top-up)`);
+      }
+    }
+  }
+}
+
 if (failures > 0) {
   console.error(`\nvoice-check: ${failures} failure(s)\n`);
   process.exit(1);
