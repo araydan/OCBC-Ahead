@@ -70,6 +70,7 @@ function shortfall(state: FinancialState): ProposalDraft | null {
     ],
     resolutionCopy: {
       approved: `Done — I moved ${money(topUp)} from your 360 to Everyday. You’ll stay above your buffer through the pinch.`,
+      reverted: `I moved the ${money(topUp)} back to your 360 — the top-up is undone, balances exactly as before.`,
       rejected: `Okay — I’ll stay out of it, and I’ll warn you again closer to the dip.`,
     },
     priority: 3,

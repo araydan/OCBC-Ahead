@@ -97,6 +97,11 @@ console.log(`\n— RESOLUTION copy: every actionable card must answer in words`)
       if (instalment && !instalment.resolvedText) {
         fail(`[${event.type}] instalment choice must carry resolvedText (shares 'approved' with top-up)`);
       }
+      // A reversible action can be undone from the Decision Log even when the
+      // card itself offers no undo choice — that path needs words too.
+      if (p.action?.reversible && !p.resolutionCopy?.reverted) {
+        fail(`[${event.type}] "${p.title}" has a reversible action but no 'reverted' copy for the Log-tab undo`);
+      }
     }
   }
 }

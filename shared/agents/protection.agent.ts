@@ -39,7 +39,9 @@ export const protectionAgent: Agent = {
       confidence: 0.88,
       dataUsed: ['Payee history', '12-month transfer pattern', 'Time-of-day model', 'OCBC scam intelligence feed', 'Money Lock status'],
       projectedOutcome,
-      action: { type: 'pauseTransfer', label: 'Keep it held', params: { transferId: t.id }, reversible: true },
+      // Not "reversible": a protective hold has no meaningful undo — it resolves
+      // through the explicit Block / It-was-me choices, never a Log-tab tap.
+      action: { type: 'pauseTransfer', label: 'Keep it held', params: { transferId: t.id }, reversible: false },
       choices: [
         { id: 'block', label: 'Block & report', kind: 'danger', resolvesTo: 'blocked' },
         { id: 'release', label: 'It was me — release', kind: 'secondary', resolvesTo: 'confirmed' },
