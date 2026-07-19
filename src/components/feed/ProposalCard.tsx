@@ -170,12 +170,17 @@ function ResolvedBanner({ proposal, booked }: { proposal: AgentProposal; booked:
   };
   const r = map[proposal.status] ?? { text: 'Resolved', color: '#5B5B6B' };
   return (
-    <div
-      className="flex flex-1 items-center justify-center gap-1.5 rounded-full px-3 py-2.5 text-center text-sm font-bold"
-      style={{ background: tint(r.color, 0.12), color: r.color }}
-    >
-      {r.icon && <Icon name={r.icon} size={15} strokeWidth={2.2} />}
-      {r.text}
+    <div className="flex-1">
+      <div
+        className="flex items-center justify-center gap-1.5 rounded-full px-3 py-2.5 text-center text-sm font-bold"
+        style={{ background: tint(r.color, 0.12), color: r.color }}
+      >
+        {r.icon && <Icon name={r.icon} size={15} strokeWidth={2.2} />}
+        {r.text}
+      </div>
+      {proposal.resolutionNote && (
+        <p className="mt-2 px-1 text-left text-[12px] leading-relaxed text-ocbc-slate">{proposal.resolutionNote}</p>
+      )}
     </div>
   );
 }

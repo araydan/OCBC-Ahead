@@ -177,8 +177,18 @@ export const useSimulation = create<SimStore>((set, get) => {
       const choice = p?.choices?.find((c) => c.id === choiceId);
       if (!p || !choice) return;
 
-      const setStatus = (status: AgentProposal['status']) =>
-        set({ proposals: get().proposals.map((x) => (x.id === proposalId ? { ...x, status } : x)) });
+      // The agent answers in words: the choice's own statement, else the copy
+      // authored for the status this resolution actually lands on.
+      const noteFor = (status: AgentProposal['status']) => choice.resolvedText ?? p.resolutionCopy?.[status];
+      const setStatus = (status: AgentProposal['status']) => {
+        const note = noteFor(status);
+        set({
+          proposals: get().proposals.map((x) =>
+            x.id === proposalId ? { ...x, status, ...(note ? { resolutionNote: note } : {}) } : x,
+          ),
+        });
+        return note;
+      };
       const prependAudit = (detail: string) => set({ audit: [auditEntry(p, detail), ...get().audit] });
 
       // UNDO an already-executed action — or, if nothing actually ran yet (e.g.
@@ -193,11 +203,17 @@ export const useSimulation = create<SimStore>((set, get) => {
               audit: [auditEntry(p, `Reversed: ${r.detail}`), ...get().audit.map((a) => (a.id === entry.id ? { ...a, reverted: true } : a))],
             });
           }
-          setStatus('reverted');
-          get().pushToast('Reversed — funds restored exactly', 'good');
+          const note = setStatus('reverted');
+          get().pushToast(note ?? 'Reversed — funds restored exactly', 'good');
         } else {
-          setStatus('rejected');
-          get().pushToast('Dismissed — nothing changed', 'info');
+          // Nothing ran yet, so this "undo" is a decline — use the rejected copy.
+          const note = p.resolutionCopy?.rejected;
+          set({
+            proposals: get().proposals.map((x) =>
+              x.id === proposalId ? { ...x, status: 'rejected', ...(note ? { resolutionNote: note } : {}) } : x,
+            ),
+          });
+          get().pushToast(note ?? 'Dismissed — nothing changed', 'info');
         }
         return;
       }
@@ -206,8 +222,8 @@ export const useSimulation = create<SimStore>((set, get) => {
       if (choice.id === 'block') {
         const r = blockTransfer(state, { transferId: p.action?.params?.transferId });
         set({ state: r.state, audit: [auditEntry(p, r.detail), ...get().audit] });
-        setStatus('blocked');
-        get().pushToast('Blocked & reported — your money is safe', 'good');
+        const note = setStatus('blocked');
+        get().pushToast(note ?? 'Blocked & reported — your money is safe', 'good');
         return;
       }
 
@@ -215,16 +231,16 @@ export const useSimulation = create<SimStore>((set, get) => {
       if (choice.id === 'release') {
         const r = releaseTransfer(state, { transferId: p.action?.params?.transferId });
         set({ state: r.state, audit: [auditEntry(p, r.detail), ...get().audit] });
-        setStatus('confirmed');
-        get().pushToast('Released — transfer sent', 'info');
+        const note = setStatus('confirmed');
+        get().pushToast(note ?? 'Released — transfer sent', 'info');
         return;
       }
 
       // Book a human RM.
       if (choice.resolvesTo === 'escalated') {
         set({ rmBookings: [...get().rmBookings, proposalId] });
-        setStatus('escalated');
-        get().pushToast('Booked — your RM already has the full context', 'info');
+        const note = setStatus('escalated');
+        get().pushToast(note ?? 'Booked — your RM already has the full context', 'info');
         return;
       }
 
@@ -232,8 +248,8 @@ export const useSimulation = create<SimStore>((set, get) => {
       if (choice.resolvesTo === 'approved') {
         if (choice.id === 'instalment') {
           prependAudit('Set up an IRAS GIRO instalment plan (12 months) — no lump sum needed.');
-          setStatus('approved');
-          get().pushToast('IRAS instalment plan set up', 'good');
+          const note = setStatus('approved');
+          get().pushToast(note ?? 'IRAS instalment plan set up', 'good');
           return;
         }
         // Execute now only if it wasn't already auto-executed.
@@ -246,15 +262,15 @@ export const useSimulation = create<SimStore>((set, get) => {
             });
           }
         }
-        setStatus('approved');
-        get().pushToast(`Done — ${p.action?.label ?? 'approved'}`, 'good');
+        const note = setStatus('approved');
+        get().pushToast(note ?? `Done — ${p.action?.label ?? 'approved'}`, 'good');
         return;
       }
 
       // Reject / dismiss / not now.
       if (choice.resolvesTo === 'rejected') {
-        setStatus('rejected');
-        get().pushToast('Dismissed — nothing changed', 'info');
+        const note = setStatus('rejected');
+        get().pushToast(note ?? 'Dismissed — nothing changed', 'info');
       }
     },
 
@@ -264,15 +280,17 @@ export const useSimulation = create<SimStore>((set, get) => {
       if (!entry?.action || entry.reverted || !entry.reversible) return;
       const r = revertAction(state, entry.action, entry.meta);
       if (!r.ok) return;
+      // Same words whether the undo came from the card or the Decision Log.
+      const note = get().proposals.find((p) => p.id === entry.proposalId)?.resolutionCopy?.reverted;
       set({
         state: r.state,
         audit: [
           auditEntry({ ...(get().proposals.find((p) => p.id === entry.proposalId) ?? ({} as AgentProposal)), id: entry.proposalId, agentId: entry.agentId, title: entry.title, createdAt: entry.at, confidence: entry.confidence, action: entry.action } as AgentProposal, `Reversed: ${r.detail}`),
           ...get().audit.map((a) => (a.id === auditId ? { ...a, reverted: true } : a)),
         ],
-        proposals: get().proposals.map((p) => (p.id === entry.proposalId ? { ...p, status: 'reverted' } : p)),
+        proposals: get().proposals.map((p) => (p.id === entry.proposalId ? { ...p, status: 'reverted', ...(note ? { resolutionNote: note } : {}) } : p)),
       });
-      get().pushToast('Reversed from the Decision Log', 'good');
+      get().pushToast(note ?? 'Reversed from the Decision Log', 'good');
     },
 
     setMode: (agentId, mode) =>
