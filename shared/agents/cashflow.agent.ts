@@ -123,6 +123,9 @@ function allocate(state: FinancialState, salary: number): ProposalDraft | null {
 
   const btoRow: ProjectedOutcome = { label: 'BTO reno goal', value: `${btoPctBefore}% → ${btoPctAfter}%`, tone: 'good' };
   const deferredRow: ProjectedOutcome[] = deferred > 0 ? [{ label: 'Deferred (auto, after IRAS)', value: money(deferred), tone: 'neutral' }] : [];
+  // On a not-yet-acted card, "auto, after IRAS" would promise a move that may
+  // never happen (Observe never acts) — keep the planned row conditional too.
+  const deferredRowPlanned: ProjectedOutcome[] = deferred > 0 ? [{ label: 'Would defer (until IRAS clears)', value: money(deferred), tone: 'neutral' }] : [];
   const projectedOutcome: ProjectedOutcome[] = [
     { label: 'Moved to goals now', value: money(movedNow), tone: 'good' },
     ...deferredRow,
@@ -130,7 +133,7 @@ function allocate(state: FinancialState, salary: number): ProposalDraft | null {
   ];
   const projectedOutcomePlanned: ProjectedOutcome[] = [
     { label: 'Would move to goals now', value: money(movedNow), tone: 'good' },
-    ...deferredRow,
+    ...deferredRowPlanned,
     btoRow,
   ];
 
