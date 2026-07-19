@@ -41,6 +41,11 @@ for (const mode of ['observe', 'suggest'] as AutonomyMode[]) {
           fail(`[${mode}/${event.type}] "${p.title}" contains "${phrase}" but status is ${p.status}`);
         }
       }
+      // Encoding guard: UTF-8 copy re-saved through a Windows codepage shows up
+      // as "â€…"/"Ã…" sequences — that corruption must never reach a customer.
+      if (text.includes('â€') || text.includes('Ã¢') || text.includes('�')) {
+        fail(`[${mode}/${event.type}] mojibake in "${p.title.slice(0, 40)}…"`);
+      }
       if (mode === 'observe' && p.status !== 'noted') {
         fail(`[observe/${event.type}] "${p.title}" has status ${p.status}, expected noted`);
       }
@@ -80,6 +85,9 @@ console.log(`\n— RESOLUTION copy: every actionable card must answer in words`)
       for (const c of p.choices) {
         const note = c.resolvedText ?? p.resolutionCopy?.[c.resolvesTo];
         if (!note) fail(`[${event.type}] "${p.title}" choice "${c.id}" has no resolution statement for ${c.resolvesTo}`);
+        if (note && (note.includes('â€') || note.includes('Ã¢') || note.includes('�'))) {
+          fail(`[${event.type}] mojibake in resolution copy for choice "${c.id}": ${note.slice(0, 60)}…`);
+        }
         // Undo on a still-pending card resolves as a dismiss — that path needs words too.
         if (c.resolvesTo === 'reverted' && !p.resolutionCopy?.rejected) {
           fail(`[${event.type}] "${p.title}" has an undo choice but no 'rejected' copy for the pending-dismiss path`);
