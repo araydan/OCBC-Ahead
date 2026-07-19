@@ -10,7 +10,13 @@ const has = (q: string, ...keys: string[]) => keys.some((k) => q.includes(k));
 
 export function suggestedQuestions(proposal: AgentProposal): string[] {
   const out = ['Why did you do this?', 'How confident are you?'];
-  out.push(proposal.action?.reversible ? 'Can I undo this?' : 'Why send this to a human?');
+  out.push(
+    proposal.kind === 'protection-alert'
+      ? 'How do I resolve this?'
+      : proposal.action?.reversible
+        ? 'Can I undo this?'
+        : 'Why send this to a human?',
+  );
   if (proposal.projectedOutcome.length) out.push("What's the impact for me?");
   return out;
 }
@@ -25,7 +31,10 @@ export function answerQuestion(proposal: AgentProposal, _state: FinancialState, 
 
   if (!q) return `${agent} here. Ask me why I did this, whether it's reversible, how confident I am, or what it means for you.`;
 
-  if (has(q, 'what if', 'undo', 'revers', 'revert', 'cancel', 'take back', 'change my mind')) {
+  if (has(q, 'what if', 'undo', 'revers', 'revert', 'cancel', 'take back', 'change my mind', 'resolve')) {
+    if (proposal.kind === 'protection-alert') {
+      return `${agent}: I paused this myself — it isn't a one-tap undo, because it only resolves once you tell me which way to go: block it and I'll report it, or confirm it was you and I'll release it right away.`;
+    }
     return proposal.action?.reversible
       ? `${agent}: This is fully reversible. “${proposal.action.label}” can be undone in one tap from here or the Decision Log — your balances snap back exactly to where they were. Nothing is locked in, which is precisely why I was comfortable acting.`
       : `${agent}: I didn't execute this myself — it isn't a one-tap-reversible move (it involves an outside party or a lock-in). That's exactly why I routed it to a human RM for you to decide, rather than acting automatically.`;
