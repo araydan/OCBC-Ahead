@@ -146,6 +146,15 @@ export interface ProposalChoice {
   resolvesTo: ProposalStatus;
 }
 
+/** Partial copy override applied when a proposal's final disposition differs
+ * from the voice its draft was authored in. */
+export interface VoicePatch {
+  title?: string;
+  summary?: string;
+  reasoning?: ReasoningStep[];
+  projectedOutcome?: ProjectedOutcome[];
+}
+
 /** What an agent returns from evaluate(). The orchestrator stamps the rest. */
 export interface ProposalDraft {
   agentId: AgentId;
@@ -160,6 +169,15 @@ export interface ProposalDraft {
   action?: Action;
   choices?: ProposalChoice[];
   priority?: number; // higher = more urgent (used in conflict resolution)
+  /** Copy variants for when the policy routes this draft to a different
+   * disposition than the voice it was authored in (e.g. an intended action
+   * demoted to a suggestion or an observation). The orchestrator swaps these
+   * in based on the FINAL kind; a missing variant keeps the authored copy. */
+  voices?: {
+    acted?: VoicePatch;
+    suggested?: VoicePatch;
+    observed?: VoicePatch;
+  };
 }
 
 export interface AgentProposal extends ProposalDraft {

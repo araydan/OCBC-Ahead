@@ -107,8 +107,21 @@ export function dispatch(
     const policy = decidePolicy(draft.action, config, draft.kind);
     const r = route(draft, policy);
 
+    // The draft's copy was authored in one voice (usually its default mode's).
+    // If the policy routed the card to a different disposition, swap in the
+    // variant that tells the truth about what actually happened.
+    const voice =
+      r.kind === 'action-taken'
+        ? draft.voices?.acted
+        : r.kind === 'needs-approval'
+          ? draft.voices?.suggested
+          : r.kind === 'insight'
+            ? draft.voices?.observed
+            : undefined;
+
     const base: AgentProposal = {
       ...draft,
+      ...voice,
       kind: r.kind,
       id: uid('prop'),
       createdAt: event.at,
